@@ -4,8 +4,10 @@ import os
 import logging
 import sys
 from collections import deque
+import asyncio
+import time
 
-# --- LOG MEMORY BUFFER ---
+# --- LOG MEMORY BUFFER --- #
 # Stores the last 20 log entries in memory
 LOG_BUFFER = deque(maxlen=20)
 
@@ -14,7 +16,7 @@ class BufferLogHandler(logging.Handler):
         log_entry = self.format(record)
         LOG_BUFFER.append(log_entry)
 
-# --- RAILWAY STREAM LOGGING CONFIGURATION ---
+# --- RAILWAY STREAM LOGGING CONFIGURATION --- #
 log_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%H:%M:%S')
 
 # Stream to Railway Console
@@ -46,9 +48,10 @@ class MyClient(discord.Client):
     async def on_ready(self):
         logger.info(f"Logged in as {self.user}!")
 
+
 client = MyClient()
 
-# --- OWNER LOGS MANAGEMENT COMMANDS ---
+# --- OWNER LOGS MANAGEMENT COMMANDS --- #
 
 @client.tree.command(name="checklogs", description="View the latest bot activity logs (Owner only)")
 async def checklogs(interaction: discord.Interaction):
@@ -63,10 +66,10 @@ async def checklogs(interaction: discord.Interaction):
 
     logs_joined = "\n".join(LOG_BUFFER)
     log_payload = f"```text\n{logs_joined}\n```"
-
+    
     if len(log_payload) > 2000:
         log_payload = f"```text\n...[Truncated]...\n{logs_joined[-1800:]}\n```"
-
+        
     await interaction.response.send_message(f"📋 **Recent Bot Logs ({len(LOG_BUFFER)} entries):**\n{log_payload}", ephemeral=True)
 
 
@@ -77,30 +80,26 @@ async def clearlogs(interaction: discord.Interaction):
         await interaction.response.send_message("❌ You are not the owner of this app!", ephemeral=True)
         return
 
-    # Wipe the double-ended queue clean
     LOG_BUFFER.clear()
-    
-    # Log the action so your console still reflects who did it
     logger.info(f"🧹 Internal memory log buffer cleared by owner ({interaction.user}).")
-    
     await interaction.response.send_message("🧹 **Log history wiped successfully!** Future activities will populate fresh.", ephemeral=True)
 
 
-# --- REST OF THE BOT COMMANDS ---
+# --- GENERAL BOT COMMANDS --- #
 
 @client.tree.command(name="lockapp", description="Toggle the app lock state (Owner only)")
 async def lockapp(interaction: discord.Interaction):
     logger.info(f"User {interaction.user} ({interaction.user.id}) attempted to use /lockapp")
-    
     if interaction.user.id != client.MY_USER_ID:
         logger.warning(f"Unauthorized /lockapp attempt by {interaction.user}")
         await interaction.response.send_message("❌ You are not the owner of this app!", ephemeral=True)
         return
-        
+
     client.is_locked = not client.is_locked
     status = "🔒 LOCKED" if client.is_locked else "🔓 UNLOCKED"
     logger.info(f"App lock status changed to: {status} by owner.")
     await interaction.response.send_message(f"App status updated: {status}", ephemeral=True)
+
 
 @client.tree.command(name="spam", description="Spam messages within Discord user limits")
 @app_commands.describe(amount="How much (Max 50)", message="The text to spam")
@@ -111,12 +110,12 @@ async def spam(interaction: discord.Interaction, amount: int, message: str):
         logger.warning(f"/spam blocked: App is locked. Triggered by {interaction.user}")
         await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
         return
-        
+
     if amount > 50:
-        logger.warning(f"/spam rejected: Amount {amount} exceeds max rule of 30.")
-        await interaction.response.send_message("❌ Keep it under 50!GREEDY BOY", ephemeral=True)
+        logger.warning(f"/spam rejected: Amount {amount} exceeds max rule of 50.")
+        await interaction.response.send_message("❌ Keep it under 50! GREEDY BOY", ephemeral=True)
         return
-        
+
     spam_block = f"{message}\n" * amount
     if len(spam_block) > 2000:
         logger.warning(f"/spam rejected: Payload total length ({len(spam_block)} chars) exceeds Discord limit.")
@@ -124,15 +123,14 @@ async def spam(interaction: discord.Interaction, amount: int, message: str):
         return
 
     await interaction.response.send_message("Ok bro", ephemeral=False)
-    initial_msg = await interaction.original_response()
-
     await interaction.followup.send(spam_block, ephemeral=False)
     logger.info(f"Successfully processed /spam payload for {interaction.user}")
-
+    
     try:
-        await initial_msg.delete()
+        await interaction.delete_original_response()
     except discord.HTTPException as e:
         logger.error(f"Failed to delete initial 'Ok bro' message: {e}")
+
 
 @client.tree.command(name="crash", description="Select a platform target and amount directly")
 @app_commands.describe(platform="Choose the platform", amount="Enter how many times to execute (1-100)")
@@ -147,14 +145,13 @@ async def crash(interaction: discord.Interaction, platform: str, amount: int):
         logger.warning(f"/crash blocked: App is locked. Triggered by {interaction.user}")
         await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
         return
-        
+
     if amount <= 0 or amount > 100:
         logger.warning(f"/crash rejected: Amount {amount} out of bounds.")
         await interaction.response.send_message("❌ Amount must be between 1 and 100!", ephemeral=True)
         return
 
     await interaction.response.send_message("Ok bro", ephemeral=False)
-    initial_msg = await interaction.original_response()
 
     if platform == "mobile":
         mobile_image_url = "https://discordapp.com"
@@ -165,19 +162,45 @@ async def crash(interaction: discord.Interaction, platform: str, amount: int):
         else:
             await interaction.followup.send(payload, ephemeral=False)
             logger.info(f"Successfully processed /crash mobile payload for {interaction.user}")
+            
     elif platform == "pc":
         await interaction.followup.send(f"💻 Executing PC protocol {amount} times...", ephemeral=False)
         logger.info(f"Successfully processed /crash PC payload for {interaction.user}")
 
     try:
-        await initial_msg.delete()
+        await interaction.delete_original_response()
     except discord.HTTPException as e:
         logger.error(f"Failed to delete initial 'Ok bro' message: {e}")
 
-# --- START THE BOT ---
-TOKEN = os.getenv("DISCORD_TOKEN")
 
-if TOKEN:
-    client.run(TOKEN)
-else:
-    print("❌ Error: 'DISCORD_TOKEN' environment variable not found.")
+@client.tree.command(name="self_destruct", description="Send a temporary message that deletes itself")
+@app_commands.describe(seconds="How many seconds before it disappears (Max 60)", message="The secret message")
+async def self_destruct(interaction: discord.Interaction, seconds: int, message: str):
+    logger.info(f"User {interaction.user} ({interaction.user.id}) called /self_destruct | Time: {seconds}s")
+
+    if client.is_locked and interaction.user.id != client.MY_USER_ID:
+        logger.warning(f"/self_destruct blocked: App is locked. Triggered by {interaction.user}")
+        await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
+        return
+
+    if seconds <= 0 or seconds > 60:
+        await interaction.response.send_message("❌ Keep the timer between 1 and 60 seconds!", ephemeral=True)
+        return
+
+    target_time = int(time.time()) + seconds
+    countdown_text = f"💣 **TOP SECRET:** {message}\n\n*This message will vanish <t:{target_time}:R>...*"
+
+    await interaction.response.send_message(countdown_text, ephemeral=False)
+    await asyncio.sleep(seconds)
+
+    try:
+        await interaction.delete_original_response()
+        logger.info(f"💥 Successfully self-destructed message from {interaction.user}")
+    except discord.HTTPException as e:
+        logger.error(f"Failed to self-destruct message: {e}")
+
+
+# --- START THE BOT --- #
+    TOKEN = os.getenv("DISCORD_TOKEN")
+    else:
+        print("❌ Error: 'DISCORD_TOKEN' environment variable not found.")
