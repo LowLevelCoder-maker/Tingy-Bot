@@ -39,13 +39,13 @@ async def spam(interaction: discord.Interaction, amount: int, message: str):
         await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
         return
 
-    if amount > 2000:
-        await interaction.response.send_message("❌ Keep it under 2000!", ephemeral=True)
+    if amount > 51:
+        await interaction.response.send_message("❌ Keep it under 51!", ephemeral=True)
         return
 
     spam_block = f"{message}\n" * amount
-    if len(spam_block) > 2000:
-        await interaction.response.send_message("❌ Exceeds Discord's 2000 character limit!", ephemeral=True)
+    if len(spam_block) > 51:
+        await interaction.response.send_message("❌ Greedy jamie", ephemeral=True)
         return
 
     # 1. Send the first public message response "Ok bro"
