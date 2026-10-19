@@ -226,9 +226,7 @@ async def performance(interaction: discord.Interaction):
     )
     
     await interaction.response.send_message(perf_card, ephemeral=False)
-@client.tree.command(name="performance", description="Check live bot performance and system diagnostics")
-async def performance(interaction: discord.Interaction):
-    logger.info(f"User {interaction.user} checked bot diagnostics")
+
 
     if client.is_locked and interaction.user.id != client.MY_USER_ID:
         await interaction.response.send_message("❌ This app is currently locked!", ephemeral=True)
