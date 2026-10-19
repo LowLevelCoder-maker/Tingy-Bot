@@ -250,6 +250,25 @@ async def performance(interaction: discord.Interaction):
     )
     
     await interaction.response.send_message(perf_card, ephemeral=False)
+@client.tree.command(name="avatar", description="View the profile picture of a server member")
+@app_commands.describe(user="The member whose avatar you want to see (Leave blank for yours)")
+async def avatar(interaction: discord.Interaction, user: discord.User = None):
+    target_user = user or interaction.user
+    logger.info(f"User {interaction.user} checked the avatar of {target_user}")
+
+    if client.is_locked and interaction.user.id != client.MY_USER_ID:
+        await interaction.response.send_message("❌ This app is currently locked!", ephemeral=True)
+        return
+
+    avatar_url = target_user.display_avatar.url
+
+    embed = discord.Embed(
+        title=f"🖼️ Avatar for {target_user.name}",
+        color=discord.Color.blue()
+    )
+    embed.set_image(url=avatar_url)
+
+    await interaction.response.send_message(embed=embed, ephemeral=False)
 
 # --- START THE BOT --- #
 if __name__ == "__main__":
