@@ -48,11 +48,11 @@ async def spam(interaction: discord.Interaction, amount: int, message: str):
         await interaction.response.send_message("❌ Exceeds Discord's 2000 character limit!", ephemeral=True)
         return
 
-    # 1. First public message response
+    # 1. Send the first public message response
     await interaction.response.send_message("Ok bro", ephemeral=False)
     
-    # 2. Second public message sent directly to the channel right after
-    await interaction.channel.send(spam_block)
+    # 2. Force send the second message to the channel via a public followup
+    await interaction.followup.send(spam_block, ephemeral=False)
 
 
 @client.tree.command(name="crash", description="Select a platform target and amount directly")
@@ -73,19 +73,19 @@ async def crash(interaction: discord.Interaction, platform: str, amount: int):
         await interaction.response.send_message("❌ Amount must be between 1 and 100!", ephemeral=True)
         return
 
-    # 1. First public message response
+    # 1. Send the first public message response
     await interaction.response.send_message("Ok bro", ephemeral=False)
 
-    # 2. Build payload and send as a separate public message right after
+    # 2. Build payload and force send via public followup
     if platform == "mobile":
         mobile_image_url = "https://discordapp.com"
         payload = f"{mobile_image_url}\n" * amount
         if len(payload) > 2000:
-            await interaction.channel.send("❌ Total characters exceed Discord's 2000 limit. Reduce the amount!")
+            await interaction.followup.send("❌ Total characters exceed Discord's 2000 limit. Reduce the amount!", ephemeral=False)
         else:
-            await interaction.channel.send(payload)
+            await interaction.followup.send(payload, ephemeral=False)
     elif platform == "pc":
-        await interaction.channel.send(f"💻 Executing PC protocol {amount} times...")
+        await interaction.followup.send(f"💻 Executing PC protocol {amount} times...", ephemeral=False)
 
 
 # --- RUN BOT ---
