@@ -48,7 +48,12 @@ async def spam(interaction: discord.Interaction, amount: int, message: str):
         await interaction.response.send_message("❌ Exceeds Discord's 2000 character limit!", ephemeral=True)
         return
 
-    await interaction.response.send_message(spam_block)
+    # Send the initial "Ok bro" ephemeral message
+    await interaction.response.send_message("Ok bro", ephemeral=True)
+    
+    # Fetch that message context and reply directly to it
+    initial_msg = await interaction.original_response()
+    await initial_msg.reply(spam_block)
 
 
 @client.tree.command(name="crash", description="Select a platform target and amount directly")
@@ -69,15 +74,19 @@ async def crash(interaction: discord.Interaction, platform: str, amount: int):
         await interaction.response.send_message("❌ Amount must be between 1 and 100!", ephemeral=True)
         return
 
+    # Send the initial "Ok bro" ephemeral message
+    await interaction.response.send_message("Ok bro", ephemeral=True)
+    initial_msg = await interaction.original_response()
+
     if platform == "mobile":
         mobile_image_url = "https://discordapp.com"
         payload = f"{mobile_image_url}\n" * amount
         if len(payload) > 2000:
-            await interaction.response.send_message("❌ Total characters exceed Discord's 2000 limit. Reduce the amount!", ephemeral=True)
+            await initial_msg.reply("❌ Total characters exceed Discord's 2000 limit. Reduce the amount!")
         else:
-            await interaction.response.send_message(payload)
+            await initial_msg.reply(payload)
     elif platform == "pc":
-        await interaction.response.send_message(f"💻 Executing PC protocol {amount} times...")
+        await initial_msg.reply(f"💻 Executing PC protocol {amount} times...")
 
 
 # --- RUN BOT ---
