@@ -255,18 +255,22 @@ async def performance(interaction: discord.Interaction):
 async def avatar(interaction: discord.Interaction, user: discord.User = None):
     target_user = user or interaction.user
     logger.info(f"User {interaction.user} checked the avatar of {target_user}")
-
+    
     if client.is_locked and interaction.user.id != client.MY_USER_ID:
         await interaction.response.send_message("❌ This app is currently locked!", ephemeral=True)
         return
-
+        
     avatar_url = target_user.display_avatar.url
-
+    
+    # 1. Create the Embed structure
     embed = discord.Embed(
-        title=f"🖼️ Avatar for {target_user.name}",
+        title=f"🖼️ Avatar for {target_user.name}", 
         color=discord.Color.blue()
     )
     embed.set_image(url=avatar_url)
+    
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
 @client.tree.command(name="ghostping", description="Ping a user multiple times and vanish the messages instantly")
 @app_commands.describe(user="The user you want to ghost ping", amount="How many times to ping (Max 10)")
 async def ghostping(interaction: discord.Interaction, user: discord.User, amount: int):
