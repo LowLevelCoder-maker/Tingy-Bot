@@ -1,6 +1,7 @@
 import discord
 from discord import app_commands
 import os
+import asyncio  # Required for handling the delete delay on followups
 
 class MyClient(discord.Client):
     def __init__(self):
@@ -48,16 +49,16 @@ async def spam(interaction: discord.Interaction, amount: int, message: str):
         await interaction.response.send_message("❌ Exceeds Discord's 2000 character limit!", ephemeral=True)
         return
 
-    # 1. Send the first public message response "Ok bro"
-    await interaction.response.send_message("Ok bro", ephemeral=False)
-    initial_msg = await interaction.original_response()
+    # 1. Send the first response and have it delete itself after 3 seconds
+    await interaction.response.send_message("Ok bro", ephemeral=False, delete_after=3.0)
     
     # 2. Send the payload via public followup
-    await interaction.followup.send(spam_block, ephemeral=False)
+    payload_msg = await interaction.followup.send(spam_block, ephemeral=False)
 
-    # 3. Instantly delete the "Ok bro" message
+    # 3. Wait for 5 seconds, then delete the payload message
+    await asyncio.sleep(5.0)
     try:
-        await initial_msg.delete()
+        await payload_msg.delete()
     except discord.HTTPException:
         pass
 
@@ -80,26 +81,28 @@ async def crash(interaction: discord.Interaction, platform: str, amount: int):
         await interaction.response.send_message("❌ Amount must be between 1 and 100!", ephemeral=True)
         return
 
-    # 1. Send the first public message response "Ok bro"
-    await interaction.response.send_message("Ok bro", ephemeral=False)
-    initial_msg = await interaction.original_response()
+    # 1. Send the first response and have it delete itself after 3 seconds
+    await interaction.response.send_message("Ok bro", ephemeral=False, delete_after=3.0)
 
     # 2. Build payload and send via public followup
+    payload_msg = None
     if platform == "mobile":
         mobile_image_url = "https://discordapp.com"
         payload = f"{mobile_image_url}\n" * amount
         if len(payload) > 2000:
-            await interaction.followup.send("❌ Total characters exceed Discord's 2000 limit. Reduce the amount!", ephemeral=False)
+            payload_msg = await interaction.followup.send("❌ Total characters exceed Discord's 2000 limit. Reduce the amount!", ephemeral=False)
         else:
-            await interaction.followup.send(payload, ephemeral=False)
+            payload_msg = await interaction.followup.send(payload, ephemeral=False)
     elif platform == "pc":
-        await interaction.followup.send(f"💻 Executing PC protocol {amount} times...", ephemeral=False)
+        payload_msg = await interaction.followup.send(f"💻 Executing PC protocol {amount} times...", ephemeral=False)
 
-    # 3. Instantly delete the "Ok bro" message
-    try:
-        await initial_msg.delete()
-    except discord.HTTPException:
-        pass
+    # 3. Wait for 5 seconds, then delete the payload message (if it was sent)
+    if payload_msg:
+        await asyncio.sleep(1.0)
+        try:
+            await payload_msg.delete()
+        except discord.HTTPException:
+            pass
 
 
 # --- RUN BOT ---
