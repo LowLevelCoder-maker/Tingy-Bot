@@ -6,7 +6,7 @@ import sys
 from collections import deque
 import asyncio
 import time
-
+import psutil
 # --- LOG MEMORY BUFFER --- #
 # Stores the last 20 log entries in memory
 LOG_BUFFER = deque(maxlen=20)
@@ -200,6 +200,32 @@ async def self_destruct(interaction: discord.Interaction, seconds: int, message:
     except discord.HTTPException as e:
         logger.error(f"Failed to self-destruct message: {e}")
 
+@client.tree.command(name="performance", description="Check live bot performance and system diagnostics")
+async def performance(interaction: discord.Interaction):
+    logger.info(f"User {interaction.user} checked bot diagnostics")
+
+    if client.is_locked and interaction.user.id != client.MY_USER_ID:
+        await interaction.response.send_message("❌ This app is currently locked!", ephemeral=True)
+        return
+
+    ping = round(client.latency * 1000)
+    server_count = len(client.guilds)
+    buffered_logs = len(LOG_BUFFER)
+    
+    process = psutil.Process(os.getpid())
+    ram_usage = round(process.memory_info().rss / (1024 * 1024), 2)
+
+    perf_card = (
+        f"⚙️ **System Diagnostics Dashboard**\n"
+        f"```yaml\n"
+        f"Latency/Ping:  {ping}ms\n"
+        f"Active Guilds: {server_count}\n"
+        f"Log Queue:     {buffered_logs}/20 entries\n"
+        f"RAM Allocation: {ram_usage} MB\n"
+        f"```"
+    )
+    
+    await interaction.response.send_message(perf_card, ephemeral=False)
 
 # --- START THE BOT --- #
 if __name__ == "__main__":
