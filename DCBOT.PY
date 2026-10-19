@@ -33,18 +33,18 @@ async def lockapp(interaction: discord.Interaction):
 
 
 @client.tree.command(name="spam", description="Spam messages within Discord user limits")
-@app_commands.describe(amount="How much (Max 2000)", message="The text to spam")
+@app_commands.describe(amount="How much (Max 30)", message="The text to spam")
 async def spam(interaction: discord.Interaction, amount: int, message: str):
     if client.is_locked and interaction.user.id != client.MY_USER_ID:
         await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
         return
 
     if amount > 51:
-        await interaction.response.send_message("❌ Keep it under 51!", ephemeral=True)
+        await interaction.response.send_message("❌ Keep it under 30!", ephemeral=True)
         return
 
     spam_block = f"{message}\n" * amount
-    if len(spam_block) > 51:
+    if len(spam_block) > 30:
         await interaction.response.send_message("❌ Greedy jamie", ephemeral=True)
         return
 
