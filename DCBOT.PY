@@ -2,8 +2,6 @@ import discord
 from discord import app_commands
 import os
 
-# --- MODALS ---
-
 class CrashAmountModal(discord.ui.Modal):
     amount_input = discord.ui.TextInput(
         label="Amount",
@@ -40,51 +38,9 @@ class CrashAmountModal(discord.ui.Modal):
             await interaction.response.send_message(f"💻 Executing PC protocol {amount} times...")
 
 
-class SpamModal(discord.ui.Modal):
-    amount_input = discord.ui.TextInput(
-        label="Amount",
-        placeholder="Enter amount (Max 2000)...",
-        min_length=1,
-        max_length=4,
-        required=True
-    )
-    message_input = discord.ui.TextInput(
-        label="Message",
-        placeholder="Enter the text to spam...",
-        style=discord.TextStyle.paragraph,
-        required=True
-    )
-
-    def __init__(self, platform: str, client_instance):
-        super().__init__(title=f"Spam Protocol: {platform.upper()}")
-        self.platform = platform
-        self.client = client_instance
-
-    async def on_submit(self, interaction: discord.Interaction):
-        try:
-            amount = int(self.amount_input.value)
-        except ValueError:
-            await interaction.response.send_message("❌ Please enter a valid number for the amount!", ephemeral=True)
-            return
-
-        if amount > 2000:
-            await interaction.response.send_message("❌ Keep it under 2000!", ephemeral=True)
-            return
-
-        spam_block = f"{self.message_input.value}\n" * amount
-        if len(spam_block) > 2000:
-            await interaction.response.send_message("❌ Exceeds Discord's 2000 character limit!", ephemeral=True)
-            return
-
-        await interaction.response.send_message(spam_block)
-
-
-# --- DROPDOWNS & VIEWS ---
-
 class PlatformDropdown(discord.ui.Select):
-    def __init__(self, client_instance, command_context: str):
+    def __init__(self, client_instance):
         self.client = client_instance
-        self.command_context = command_context  # "crash" or "spam"
         options = [
             discord.SelectOption(label="Mobile", description="Target Mobile clients", emoji="📱", value="mobile"),
             discord.SelectOption(label="PC", description="Target PC clients", emoji="💻", value="pc")
@@ -97,20 +53,14 @@ class PlatformDropdown(discord.ui.Select):
             return
 
         selected_platform = self.values[0]
-        
-        if self.command_context == "crash":
-            await interaction.response.send_modal(CrashAmountModal(platform=selected_platform, client_instance=self.client))
-        elif self.command_context == "spam":
-            await interaction.response.send_modal(SpamModal(platform=selected_platform, client_instance=self.client))
+        await interaction.response.send_modal(CrashAmountModal(platform=selected_platform, client_instance=self.client))
 
 
 class DropdownView(discord.ui.View):
-    def __init__(self, client_instance, command_context: str):
+    def __init__(self, client_instance):
         super().__init__(timeout=60)
-        self.add_item(PlatformDropdown(client_instance, command_context))
+        self.add_item(PlatformDropdown(client_instance))
 
-
-# --- BOT CLIENT ---
 
 class MyClient(discord.Client):
     def __init__(self):
@@ -143,13 +93,36 @@ async def lockapp(interaction: discord.Interaction):
     await interaction.response.send_message(f"App status updated: {status}", ephemeral=True)
 
 
-@client.tree.command(name="spam", description="Select a platform target and configuration for spamming")
-async def spam(interaction: discord.Interaction):
+@client.tree.command(name="spam", description="Spam messages within Discord user limits")
+@app_commands.describe(
+    platform="Choose the target platform",
+    amount="How much (Max 2000)", 
+    message="The text to spam"
+)
+@app_commands.choices(platform=[
+    app_commands.Choice(name="Mobile 📱", value="mobile"),
+    app_commands.Choice(name="PC 💻", value="pc")
+])
+async def spam(interaction: discord.Interaction, platform: str, amount: int, message: str):
     if client.is_locked and interaction.user.id != client.MY_USER_ID:
         await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
         return
 
-    await interaction.response.send_message("Please select your target platform below:", view=DropdownView(client, "spam"), ephemeral=True)
+    if amount > 2000:
+        await interaction.response.send_message("❌ Keep it under 2000!", ephemeral=True)
+        return
+
+    # Process format based on choice
+    if platform == "mobile":
+        spam_block = f"📱 {message}\n" * amount
+    else:
+        spam_block = f"💻 {message}\n" * amount
+
+    if len(spam_block) > 2000:
+        await interaction.response.send_message("❌ Exceeds Discord's 2000 character limit!", ephemeral=True)
+        return
+
+    await interaction.response.send_message(spam_block)
 
 
 @client.tree.command(name="crash", description="Select a platform target and amount")
@@ -158,7 +131,7 @@ async def crash(interaction: discord.Interaction):
         await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
         return
 
-    await interaction.response.send_message("Please select your target platform below:", view=DropdownView(client, "crash"), ephemeral=True)
+    await interaction.response.send_message("Please select your target platform below:", view=DropdownView(client), ephemeral=True)
 
 
 # --- RUN BOT ---
