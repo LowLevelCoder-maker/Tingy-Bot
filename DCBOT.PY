@@ -267,8 +267,35 @@ async def avatar(interaction: discord.Interaction, user: discord.User = None):
         color=discord.Color.blue()
     )
     embed.set_image(url=avatar_url)
+@client.tree.command(name="ghostping", description="Ping a user multiple times and vanish the messages instantly")
+@app_commands.describe(user="The user you want to ghost ping", amount="How many times to ping (Max 10)")
+async def ghostping(interaction: discord.Interaction, user: discord.User, amount: int):
+    logger.info(f"User {interaction.user} ghost-pinged {user} | Amount: {amount}")
 
-    await interaction.response.send_message(embed=embed, ephemeral=False)
+    if client.is_locked and interaction.user.id != client.MY_USER_ID:
+        await interaction.response.send_message("❌ This app is currently locked!", ephemeral=True)
+        return
+
+    # Keep a tight limit so the bot doesn't get rate-limited or banned by Discord
+    if amount <= 0 or amount > 10:
+        await interaction.response.send_message("❌ Keep the pings between 1 and 10, bro!", ephemeral=True)
+        return
+
+    # Quiet confirmation to the user executing it
+    await interaction.response.send_message(f"👻 Sending {amount} ghost pings to {user.mention}...", ephemeral=True)
+    
+    ping_channel = interaction.channel
+    
+    for _ in range(amount):
+        # Fire and delete instantly
+        try:
+            ghost_msg = await ping_channel.send(user.mention)
+            await ghost_msg.delete()
+            # Micro-sleep to keep the order clean and prevent API hitting walls
+            await asyncio.sleep(0.3)
+        except discord.HTTPException as e:
+            logger.error(f"Ghost ping cycle interrupted: {e}")
+            break
 
 # --- START THE BOT --- #
 if __name__ == "__main__":
