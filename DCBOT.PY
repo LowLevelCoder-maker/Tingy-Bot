@@ -28,7 +28,7 @@ class CrashAmountModal(discord.ui.Modal):
             return
 
         if self.platform == "mobile":
-            mobile_image_url = "https://discordapp.com&"
+            mobile_image_url = "https://cdn.discordapp.com/attachments/1559201133036314716/1561416786266558665/giphy.gif?ex=6ad64633&is=6ad4f4b3&hm=eb58358036ff2842ed47acffa0943900d0bd9e978da661352eae098054882a53&"
             payload = f"{mobile_image_url}\n" * amount
             
             if len(payload) > 2000:
