@@ -90,6 +90,7 @@ async def clearlogs(interaction: discord.Interaction):
 @client.tree.command(name="lockapp", description="Toggle the app lock state (Owner only)")
 async def lockapp(interaction: discord.Interaction):
     logger.info(f"User {interaction.user} ({interaction.user.id}) attempted to use /lockapp")
+
     if interaction.user.id != client.MY_USER_ID:
         logger.warning(f"Unauthorized /lockapp attempt by {interaction.user}")
         await interaction.response.send_message("❌ You are not the owner of this app!", ephemeral=True)
@@ -105,7 +106,7 @@ async def lockapp(interaction: discord.Interaction):
 @app_commands.describe(amount="How much (Max 50)", message="The text to spam")
 async def spam(interaction: discord.Interaction, amount: int, message: str):
     logger.info(f"User {interaction.user} ({interaction.user.id}) called /spam | Amount: {amount} | Msg: '{message}'")
-    
+
     if client.is_locked and interaction.user.id != client.MY_USER_ID:
         logger.warning(f"/spam blocked: App is locked. Triggered by {interaction.user}")
         await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
@@ -140,7 +141,7 @@ async def spam(interaction: discord.Interaction, amount: int, message: str):
 ])
 async def crash(interaction: discord.Interaction, platform: str, amount: int):
     logger.info(f"User {interaction.user} ({interaction.user.id}) called /crash | Platform: {platform} | Amount: {amount}")
-    
+
     if client.is_locked and interaction.user.id != client.MY_USER_ID:
         logger.warning(f"/crash blocked: App is locked. Triggered by {interaction.user}")
         await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
@@ -201,6 +202,9 @@ async def self_destruct(interaction: discord.Interaction, seconds: int, message:
 
 
 # --- START THE BOT --- #
+if __name__ == "__main__":
     TOKEN = os.getenv("DISCORD_TOKEN")
+    if TOKEN:
+        client.run(TOKEN)
     else:
         print("❌ Error: 'DISCORD_TOKEN' environment variable not found.")
