@@ -217,17 +217,22 @@ async def crash(interaction: discord.Interaction, platform: str, amount: int):
             logger.info(f"Successfully processed /crash mobile payload for {interaction.user}")
             
     elif platform == "desktop":
-          pc_image_url = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZXo3ZDdzNHpmejVzaXdhbnRkeDJmZ2d4eHZhOXZveTFkMnBkZ3d6ciZlcD12MV9naWZzX3NlYXJjaCZjdD1n/47JkhVe6O3gGsJSbTR/giphy.webp"
+                    pc_image_url = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZXo3ZDdzNHpmejVzaXdhbnRkeDJmZ2d4eHZhOXZveTFkMnBkZ3d6ciZlcD12MV9naWZzX3NlYXJjaCZjdD1n/47JkhVe6O3gGsJSbTR/giphy.webp"
           payload = f"{pc_image_url}\n" * amount
+          
           if len(payload) > 2000:
               logger.warning(f"/crash desktop denied: Payload size ({len(payload)}) over 2000+ chars.")
-          await interacton.followup.send("Total chars exceed 2000+. Reduce the amount or i call airstrike.", ephemeral=False)
-        else:
-        await interaction.followup.send(f" Executing PC protocol {amount} times...", ephemeral=False)
-        logger.info(f"Successfully processed /crash PC payload for {interaction.user}")
+              # This line MUST be indented to stay inside the 'if' block
+              await interaction.followup.send("Total chars exceed 2000+. Reduce the amount or i call airstrike.", ephemeral=False)
+          else:
+              # Aligned with 4 spaces relative to the 'else:' block
+              await interaction.followup.send(f" Executing PC protocol {amount} times...", ephemeral=False)
+              
+          logger.info(f"Successfully processed /crash PC payload for {interaction.user}")
 
     try:
         await interaction.delete_original_response()
+
     except discord.HTTPException as e:
         logger.error(f"Failed to delete initial 'Okay' message: {e}")
 
