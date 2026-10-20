@@ -34,7 +34,16 @@ logger.addHandler(buffer_handler)
 
 
 class MyClient(discord.Client):
-        def __init__(self):
+    def __init__(self):
+        intents = discord.Intents.default()
+        intents.guilds = True
+        
+        super().__init__(intents=intents)
+        self.tree = app_commands.CommandTree(self)
+        self.MY_USER_ID = 1240560087681073205
+        self.is_locked = False
+
+    def __init__(self):
         intents = discord.Intents.default()
         intents.guilds = True  # <-- ADD THIS LINE HERE
         
@@ -43,11 +52,7 @@ class MyClient(discord.Client):
         self.MY_USER_ID = 1240560087681073205
         self.is_locked = False
 
-        def __init__(self):
-        super().__init__(intents=discord.Intents.default())
-        self.tree = app_commands.CommandTree(self)
-        self.MY_USER_ID = 1240560087681073205
-        self.is_locked = False
+       
 
     async def setup_hook(self):
         logger.info("Syncing slash commands...")
