@@ -67,15 +67,15 @@ client = MyClient()
 
 # --- OWNER LOGS MANAGEMENT COMMANDS --- #
 
-@client.tree.command(name="checklogs", description="View the latest bot activity logs (Owner only)")
+@client.tree.command(name="checklogs", description="View the logs (Owner only)")
 async def checklogs(interaction: discord.Interaction):
     if interaction.user.id != client.MY_USER_ID:
         logger.warning(f"Unauthorized /checklogs access attempt by {interaction.user} ({interaction.user.id})")
-        await interaction.response.send_message("❌ You are not the owner of this app!", ephemeral=True)
+        await interaction.response.send_message(" You are not the owner of this app.❌❌", ephemeral=True)
         return
 
     if not LOG_BUFFER:
-        await interaction.response.send_message("ℹ️ Log buffer is currently empty.", ephemeral=True)
+        await interaction.response.send_message(" Log buffer is empty.📭", ephemeral=True)
         return
 
     logs_joined = "\n".join(LOG_BUFFER)
@@ -84,40 +84,40 @@ async def checklogs(interaction: discord.Interaction):
     if len(log_payload) > 2000:
         log_payload = f"```text\n...[Truncated]...\n{logs_joined[-1800:]}\n```"
         
-    await interaction.response.send_message(f"📋 **Recent Bot Logs ({len(LOG_BUFFER)} entries):**\n{log_payload}", ephemeral=True)
+    await interaction.response.send_message(f" **Recent Logs ({len(LOG_BUFFER)} entries):**\n{log_payload}", ephemeral=True)
 
 
-@client.tree.command(name="clearlogs", description="Completely wipe the stored memory log history (Owner only)")
+@client.tree.command(name="clearlogs", description="Delete all made logs.❗ (Owner only)")
 async def clearlogs(interaction: discord.Interaction):
     if interaction.user.id != client.MY_USER_ID:
         logger.warning(f"Unauthorized /clearlogs attempt by {interaction.user} ({interaction.user.id})")
-        await interaction.response.send_message("❌ You are not the owner of this app!", ephemeral=True)
+        await interaction.response.send_message(" You are not the owner of this app⛔", ephemeral=True)
         return
 
     LOG_BUFFER.clear()
-    logger.info(f"🧹 Internal memory log buffer cleared by owner ({interaction.user}).")
-    await interaction.response.send_message("🧹 **Log history wiped successfully!** Future activities will populate fresh.", ephemeral=True)
+    logger.info(f"Internal memory log buffer cleared by owner ({interaction.user}).")
+    await interaction.response.send_message(" **Log history cleared successfully!** Future activities will show fresh.", ephemeral=True)
 
 
 # --- GENERAL BOT COMMANDS --- #
 
-@client.tree.command(name="lockapp", description="Toggle the app lock state (Owner only)")
+@client.tree.command(name="lockapp", description="Prevent users from using it.📛(Owner only)")
 async def lockapp(interaction: discord.Interaction):
     logger.info(f"User {interaction.user} ({interaction.user.id}) attempted to use /lockapp")
 
     if interaction.user.id != client.MY_USER_ID:
         logger.warning(f"Unauthorized /lockapp attempt by {interaction.user}")
-        await interaction.response.send_message("❌ You are not the owner of this app!", ephemeral=True)
+        await interaction.response.send_message(" You are not the owner of this app!", ephemeral=True)
         return
 
     client.is_locked = not client.is_locked
-    status = "🔒 LOCKED" if client.is_locked else "🔓 UNLOCKED"
+    status = "LOCKED" if client.is_locked else "UNLOCKED"
     logger.info(f"App lock status changed to: {status} by owner.")
     await interaction.response.send_message(f"App status updated: {status}", ephemeral=True)
 
 # --- PURGE COMMAND --- #
-@client.tree.command(name="purge", description="Bulk delete messages in the current channel")
-@app_commands.describe(amount="Number of messages to delete (1-100)")
+@client.tree.command(name="purge", description="delete messages in the current channel")
+@app_commands.describe(amount="Number of messages to purge (1-100)")
 @app_commands.checks.has_permissions(manage_messages=True)
 async def purge(interaction: discord.Interaction, amount: int):
     logger.info(f"User {interaction.user} ({interaction.user.id}) called /purge | Amount: {amount}")
@@ -131,7 +131,7 @@ async def purge(interaction: discord.Interaction, amount: int):
     # Range check
     if amount < 1 or amount > 100:
         logger.warning(f"/purge rejected: Amount {amount} out of bounds.")
-        await interaction.response.send_message("❌ Please enter an amount between 1 and 100, bro!", ephemeral=True)
+        await interaction.response.send_message(" Please enter an amount between 1 and 100, bro!", ephemeral=True)
         return
 
     # Acknowledge the command quickly to prevent timeouts
@@ -140,19 +140,19 @@ async def purge(interaction: discord.Interaction, amount: int):
     try:
         deleted = await interaction.channel.purge(limit=amount)
         logger.info(f"Successfully purged {len(deleted)} messages in channel {interaction.channel.id}")
-        await interaction.followup.send(f"🧹 **Successfully deleted {len(deleted)} messages!**", ephemeral=True)
+        await interaction.followup.send(f" **Successfully purged {len(deleted)} messages!**", ephemeral=True)
     except discord.Forbidden:
         logger.error("Failed to execute purge: Bot lacks 'Manage Messages' permission.")
-        await interaction.followup.send("❌ I do not have permission to delete messages here!", ephemeral=True)
+        await interaction.followup.send("Enable manage messages in order to engage command.", ephemeral=True)
     except discord.HTTPException as e:
         logger.error(f"Purge operation encountered an error: {e}")
-        await interaction.followup.send("❌ Something went wrong while attempting to delete messages.", ephemeral=True)
+        await interaction.followup.send(" Something went wrong while attempting to delete messages.", ephemeral=True)
 
 # Handle permission errors cleanly when users lack authority to run it
 @purge.error
 async def purge_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if isinstance(error, app_commands.MissingPermissions):
-        await interaction.response.send_message("❌ You lack the **Manage Messages** permission to use this command!", ephemeral=True)
+        await interaction.response.send_message(" You lack the **Manage Messages** permission to use this command!", ephemeral=True)
 
 @client.tree.command(name="spam", description="Spam messages within Discord user limits")
 @app_commands.describe(amount="How much (Max 50)", message="The text to spam")
@@ -161,28 +161,28 @@ async def spam(interaction: discord.Interaction, amount: int, message: str):
 
     if client.is_locked and interaction.user.id != client.MY_USER_ID:
         logger.warning(f"/spam blocked: App is locked. Triggered by {interaction.user}")
-        await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
+        await interaction.response.send_message(" This app is currently locked by its founder!", ephemeral=True)
         return
 
     if amount > 50:
         logger.warning(f"/spam rejected: Amount {amount} exceeds max rule of 50.")
-        await interaction.response.send_message("❌ Keep it under 50! GREEDY BOY", ephemeral=True)
+        await interaction.response.send_message(" Keep it under 50! GREEDY BOY", ephemeral=True)
         return
 
     spam_block = f"{message}\n" * amount
     if len(spam_block) > 2000:
         logger.warning(f"/spam rejected: Payload total length ({len(spam_block)} chars) exceeds Discord limit.")
-        await interaction.response.send_message("❌ Total characters exceed Discord's 2000 limit!", ephemeral=True)
+        await interaction.response.send_message("Bro,I think that sentence u tried to send was a little bit long.", ephemeral=True)
         return
 
-    await interaction.response.send_message("Ok bro", ephemeral=False)
+    await interaction.response.send_message("Okay.", ephemeral=False)
     await interaction.followup.send(spam_block, ephemeral=False)
     logger.info(f"Successfully processed /spam payload for {interaction.user}")
     
     try:
         await interaction.delete_original_response()
     except discord.HTTPException as e:
-        logger.error(f"Failed to delete initial 'Ok bro' message: {e}")
+        logger.error(f"Failed to delete initial 'Okay' message: {e}")
 
 
 @client.tree.command(name="crash", description="Select a platform target and amount directly")
@@ -196,34 +196,40 @@ async def crash(interaction: discord.Interaction, platform: str, amount: int):
 
     if client.is_locked and interaction.user.id != client.MY_USER_ID:
         logger.warning(f"/crash blocked: App is locked. Triggered by {interaction.user}")
-        await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
+        await interaction.response.send_message(" This app is currently locked by its creator!", ephemeral=True)
         return
 
     if amount <= 0 or amount > 100:
         logger.warning(f"/crash rejected: Amount {amount} out of bounds.")
-        await interaction.response.send_message("❌ Amount must be between 1 and 100!", ephemeral=True)
+        await interaction.response.send_message(" Amount must be between 1 and 100!", ephemeral=True)
         return
 
     await interaction.response.send_message("Ok bro", ephemeral=False)
 
     if platform == "mobile":
-        mobile_image_url = "https://discordapp.com"
+        mobile_image_url = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZXo3ZDdzNHpmejVzaXdhbnRkeDJmZ2d4eHZhOXZveTFkMnBkZ3d6ciZlcD12MV9naWZzX3NlYXJjaCZjdD1n/47JkhVe6O3gGsJSbTR/giphy.webp"
         payload = f"{mobile_image_url}\n" * amount
         if len(payload) > 2000:
             logger.warning(f"/crash mobile rejected: Payload size ({len(payload)}) over 2000 chars.")
-            await interaction.followup.send("❌ Total characters exceed Discord's 2000 limit. Reduce the amount!", ephemeral=False)
+            await interaction.followup.send("Total characters exceed Discord's 2000 limit. Reduce the amount! or i bomb ur os sir.", ephemeral=False)
         else:
             await interaction.followup.send(payload, ephemeral=False)
             logger.info(f"Successfully processed /crash mobile payload for {interaction.user}")
             
-    elif platform == "pc":
-        await interaction.followup.send(f"💻 Executing PC protocol {amount} times...", ephemeral=False)
+    elif platform == "desktop":
+          pc_image_url = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZXo3ZDdzNHpmejVzaXdhbnRkeDJmZ2d4eHZhOXZveTFkMnBkZ3d6ciZlcD12MV9naWZzX3NlYXJjaCZjdD1n/47JkhVe6O3gGsJSbTR/giphy.webp"
+          payload = f"{pc_image_url}\n" * amount
+          if len(payload) > 2000:
+          logger.warning(f"/crash desktop denied: Payload size ({len(payload)}) over 2000+ chars.")
+          await interacton.followup.send("Total chars exceed 2000+. Reduce the amount or i call airstrike.", ephemeral=False)
+        else:
+        await interaction.followup.send(f" Executing PC protocol {amount} times...", ephemeral=False)
         logger.info(f"Successfully processed /crash PC payload for {interaction.user}")
 
     try:
         await interaction.delete_original_response()
     except discord.HTTPException as e:
-        logger.error(f"Failed to delete initial 'Ok bro' message: {e}")
+        logger.error(f"Failed to delete initial 'Okay' message: {e}")
 
 
 @client.tree.command(name="self_destruct", description="Send a temporary message that deletes itself")
