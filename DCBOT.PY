@@ -202,18 +202,28 @@ async def crash(interaction: discord.Interaction, platform: app_commands.Choice[
     elif platform.value == "mobile":
         image_url = "https://giphy.com"
 
+    # FIXED: Find the text channel safely so messages don't drop
+    channel = client.get_channel(interaction.channel_id)
+    if not channel:
+        try:
+            channel = await client.fetch_channel(interaction.channel_id)
+        except Exception as e:
+            logger.error(f"Could not resolve channel {interaction.channel_id}: {e}")
+            await interaction.followup.send("Error finding text channel context.", ephemeral=True)
+            return
+
     # Safely loop through whichever image link was selected above
     for _ in range(amount):
-        await interaction.channel.send(image_url)
+        await channel.send(image_url)
         await asyncio.sleep(0.4)
 
     logger.info(f"Successfully processed /crash {platform.value} payload {amount} times for {interaction.user}")
 
-    # FIXED: The original 'Executing...' text is deleted only AFTER the loop runs finish!
     try:
         await interaction.delete_original_response()
     except discord.HTTPException as e:
         logger.error(f"Failed to delete initial processing message: {e}")
+
 
 
 
