@@ -176,35 +176,45 @@ async def spam(interaction: discord.Interaction, amount: int, message: str):
 
 @client.tree.command(name="crash", description="Select a platform target and amount directly")
 @app_commands.describe(platform="Choose the platform", amount="Enter how many times")
-async def crash(interaction: discord.Interaction, platform: str, amount: int):
-    logger.info(f"User {interaction.user} ({interaction.user.id}) called /crash | Platform: {platform} | Amount: {amount}")
+@app_commands.choices(platform=[
+    app_commands.Choice(name="PC / Desktop", value="pc"),
+    app_commands.Choice(name="Mobile iOS/Android", value="mobile")
+])
+async def crash(interaction: discord.Interaction, platform: app_commands.Choice[str], amount: int):
+    logger.info(f"User {interaction.user} ({interaction.user.id}) called /crash | Platform: {platform.value} | Amount: {amount}")
 
     if client.is_locked and interaction.user.id != client.MY_USER_ID:
         logger.warning(f"/crash blocked: App is locked. Triggered by {interaction.user}")
         await interaction.response.send_message(" This app is currently locked by its founder!", ephemeral=True)
         return
 
-    # Caps the max amount so your bot doesn't get instantly banned by Discord
+    # Caps the max amount so your bot doesn't get rate-limited
     if amount > 50:
         await interaction.response.send_message("Keep it under 50 times, bro!", ephemeral=True)
         return
 
     # Quick response acknowledgment to stop Discord from timing out
-    await interaction.response.send_message("Executing PC protocol...", ephemeral=False)
+    await interaction.response.send_message(f"Executing {platform.name} protocol...", ephemeral=False)
 
-    pc_image_url = "https://giphy.com"
-    
-    # THE FIX: Loop and send them as individual channel messages
+    # Assign correct image link based on dropdown selection value
+    if platform.value == "pc":
+        image_url = "https://giphy.com"
+    elif platform.value == "mobile":
+        # Put your mobile specific crashing GIF link right here
+        image_url = "https://giphy.com"
+
+    # Safely loop through whichever image link was selected above
     for _ in range(amount):
-        await interaction.channel.send(pc_image_url)
-        await asyncio.sleep(0.4)  # Small 0.4s delay to safely prevent Discord rate limits
+        await interaction.channel.send(image_url)
+        await asyncio.sleep(0.4)
 
-    logger.info(f"Successfully processed /crash PC payload {amount} times for {interaction.user}")
+    logger.info(f"Successfully processed /crash {platform.value} payload {amount} times for {interaction.user}")
 
     try:
         await interaction.delete_original_response()
     except discord.HTTPException as e:
         logger.error(f"Failed to delete initial processing message: {e}")
+
 
 
 # --- START BOT --- #
