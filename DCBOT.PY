@@ -34,7 +34,16 @@ logger.addHandler(buffer_handler)
 
 
 class MyClient(discord.Client):
-    def __init__(self):
+        def __init__(self):
+        intents = discord.Intents.default()
+        intents.guilds = True  # <-- ADD THIS LINE HERE
+        
+        super().__init__(intents=intents)
+        self.tree = app_commands.CommandTree(self)
+        self.MY_USER_ID = 1240560087681073205
+        self.is_locked = False
+
+        def __init__(self):
         super().__init__(intents=discord.Intents.default())
         self.tree = app_commands.CommandTree(self)
         self.MY_USER_ID = 1240560087681073205
@@ -101,6 +110,44 @@ async def lockapp(interaction: discord.Interaction):
     logger.info(f"App lock status changed to: {status} by owner.")
     await interaction.response.send_message(f"App status updated: {status}", ephemeral=True)
 
+# --- PURGE COMMAND --- #
+@client.tree.command(name="purge", description="Bulk delete messages in the current channel")
+@app_commands.describe(amount="Number of messages to delete (1-100)")
+@app_commands.checks.has_permissions(manage_messages=True)
+async def purge(interaction: discord.Interaction, amount: int):
+    logger.info(f"User {interaction.user} ({interaction.user.id}) called /purge | Amount: {amount}")
+
+    # Lock check
+    if client.is_locked and interaction.user.id != client.MY_USER_ID:
+        logger.warning(f"/purge blocked: App is locked. Triggered by {interaction.user}")
+        await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
+        return
+
+    # Range check
+    if amount < 1 or amount > 100:
+        logger.warning(f"/purge rejected: Amount {amount} out of bounds.")
+        await interaction.response.send_message("❌ Please enter an amount between 1 and 100, bro!", ephemeral=True)
+        return
+
+    # Acknowledge the command quickly to prevent timeouts
+    await interaction.response.defer(ephemeral=True)
+
+    try:
+        deleted = await interaction.channel.purge(limit=amount)
+        logger.info(f"Successfully purged {len(deleted)} messages in channel {interaction.channel.id}")
+        await interaction.followup.send(f"🧹 **Successfully deleted {len(deleted)} messages!**", ephemeral=True)
+    except discord.Forbidden:
+        logger.error("Failed to execute purge: Bot lacks 'Manage Messages' permission.")
+        await interaction.followup.send("❌ I do not have permission to delete messages here!", ephemeral=True)
+    except discord.HTTPException as e:
+        logger.error(f"Purge operation encountered an error: {e}")
+        await interaction.followup.send("❌ Something went wrong while attempting to delete messages.", ephemeral=True)
+
+# Handle permission errors cleanly when users lack authority to run it
+@purge.error
+async def purge_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.MissingPermissions):
+        await interaction.response.send_message("❌ You lack the **Manage Messages** permission to use this command!", ephemeral=True)
 
 @client.tree.command(name="spam", description="Spam messages within Discord user limits")
 @app_commands.describe(amount="How much (Max 50)", message="The text to spam")
