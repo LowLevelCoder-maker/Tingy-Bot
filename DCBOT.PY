@@ -7,6 +7,7 @@ from collections import deque
 import asyncio
 import time
 import psutil
+
 # --- LOG MEMORY BUFFER --- #
 # Stores the last 20 log entries in memory
 LOG_BUFFER = deque(maxlen=20)
@@ -42,17 +43,6 @@ class MyClient(discord.Client):
         self.tree = app_commands.CommandTree(self)
         self.MY_USER_ID = 1240560087681073205
         self.is_locked = False
-
-    def __init__(self):
-        intents = discord.Intents.default()
-        intents.guilds = True  # <-- ADD THIS LINE HERE
-        
-        super().__init__(intents=intents)
-        self.tree = app_commands.CommandTree(self)
-        self.MY_USER_ID = 1240560087681073205
-        self.is_locked = False
-
-       
 
     async def setup_hook(self):
         logger.info("Syncing slash commands...")
@@ -186,188 +176,39 @@ async def spam(interaction: discord.Interaction, amount: int, message: str):
 
 
 @client.tree.command(name="crash", description="Select a platform target and amount directly")
-@app_commands.describe(platform="Choose the platform", amount="Enter how many times to execute (1-100)")
-@app_commands.choices(platform=[
-    app_commands.Choice(name="Mobile 📱", value="mobile"),
-    app_commands.Choice(name="PC 💻", value="pc")
-])
+@app_commands.describe(platform="Choose the platform", amount="Enter how many times")
 async def crash(interaction: discord.Interaction, platform: str, amount: int):
     logger.info(f"User {interaction.user} ({interaction.user.id}) called /crash | Platform: {platform} | Amount: {amount}")
 
     if client.is_locked and interaction.user.id != client.MY_USER_ID:
         logger.warning(f"/crash blocked: App is locked. Triggered by {interaction.user}")
-        await interaction.response.send_message(" This app is currently locked by its creator!", ephemeral=True)
+        await interaction.response.send_message(" This app is currently locked by its founder!", ephemeral=True)
         return
 
-    if amount <= 0 or amount > 100:
-        logger.warning(f"/crash rejected: Amount {amount} out of bounds.")
-        await interaction.response.send_message(" Amount must be between 1 and 100!", ephemeral=True)
-        return
+    # Send a quick acknowledgment so the interaction doesn't time out
+    await interaction.response.send_message("Processing...", ephemeral=False)
 
-    await interaction.response.send_message("Ok bro", ephemeral=False)
-
-    if platform == "mobile":
-        mobile_image_url = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZXo3ZDdzNHpmejVzaXdhbnRkeDJmZ2d4eHZhOXZveTFkMnBkZ3d6ciZlcD12MV9naWZzX3NlYXJjaCZjdD1n/47JkhVe6O3gGsJSbTR/giphy.webp"
-        payload = f"{mobile_image_url}\n" * amount
-        if len(payload) > 2000:
-            logger.warning(f"/crash mobile rejected: Payload size ({len(payload)}) over 2000 chars.")
-            await interaction.followup.send("Total characters exceed Discord's 2000 limit. Reduce the amount! or i bomb ur os sir.", ephemeral=False)
-        else:
-            await interaction.followup.send(payload, ephemeral=False)
-            logger.info(f"Successfully processed /crash mobile payload for {interaction.user}")
-            
-    elif platform == "desktop":
-                    pc_image_url = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZXo3ZDdzNHpmejVzaXdhbnRkeDJmZ2d4eHZhOXZveTFkMnBkZ3d6ciZlcD12MV9naWZzX3NlYXJjaCZjdD1n/47JkhVe6O3gGsJSbTR/giphy.webp"
-          payload = f"{pc_image_url}\n" * amount
-          
-          if len(payload) > 2000:
-              logger.warning(f"/crash desktop denied: Payload size ({len(payload)}) over 2000+ chars.")
-              # This line MUST be indented to stay inside the 'if' block
-              await interaction.followup.send("Total chars exceed 2000+. Reduce the amount or i call airstrike.", ephemeral=False)
-          else:
-              # Aligned with 4 spaces relative to the 'else:' block
-              await interaction.followup.send(f" Executing PC protocol {amount} times...", ephemeral=False)
-              
-          logger.info(f"Successfully processed /crash PC payload for {interaction.user}")
-
-    try:
-        await interaction.delete_original_response()
-
-    except discord.HTTPException as e:
-        logger.error(f"Failed to delete initial 'Okay' message: {e}")
-
-
-@client.tree.command(name="self_destruct", description="Send a temporary message that deletes itself")
-@app_commands.describe(seconds="How many seconds before it disappears (Max 60)", message="The secret message")
-async def self_destruct(interaction: discord.Interaction, seconds: int, message: str):
-    logger.info(f"User {interaction.user} ({interaction.user.id}) called /self_destruct | Time: {seconds}s")
-
-    if client.is_locked and interaction.user.id != client.MY_USER_ID:
-        logger.warning(f"/self_destruct blocked: App is locked. Triggered by {interaction.user}")
-        await interaction.response.send_message("❌ This app is currently locked by its creator!", ephemeral=True)
-        return
-
-    if seconds <= 0 or seconds > 60:
-        await interaction.response.send_message("❌ Keep the timer between 1 and 60 seconds!", ephemeral=True)
-        return
-
-    target_time = int(time.time()) + seconds
-    countdown_text = f"💣 **TOP SECRET:** {message}\n\n*This message will vanish <t:{target_time}:R>...*"
-
-    await interaction.response.send_message(countdown_text, ephemeral=False)
-    await asyncio.sleep(seconds)
-
-    try:
-        await interaction.delete_original_response()
-        logger.info(f"💥 Successfully self-destructed message from {interaction.user}")
-    except discord.HTTPException as e:
-        logger.error(f"Failed to self-destruct message: {e}")
-
-@client.tree.command(name="performance", description="Check live bot performance and system diagnostics")
-async def performance(interaction: discord.Interaction):
-    logger.info(f"User {interaction.user} checked bot diagnostics")
-
-    if client.is_locked and interaction.user.id != client.MY_USER_ID:
-        await interaction.response.send_message("❌ This app is currently locked!", ephemeral=True)
-        return
-
-    ping = round(client.latency * 1000)
-    server_count = len(client.guilds)
-    buffered_logs = len(LOG_BUFFER)
+    pc_image_url = "https://giphy.com"
+    payload = f"{pc_image_url}\n" * amount
     
-    process = psutil.Process(os.getpid())
-    ram_usage = round(process.memory_info().rss / (1024 * 1024), 2)
-
-    perf_card = (
-        f"⚙️ **System Diagnostics Dashboard**\n"
-        f"```yaml\n"
-        f"Latency/Ping:  {ping}ms\n"
-        f"Active Guilds: {server_count}\n"
-        f"Log Queue:     {buffered_logs}/20 entries\n"
-        f"RAM Allocation: {ram_usage} MB\n"
-        f"```"
-    )
-    
-    await interaction.response.send_message(perf_card, ephemeral=False)
-
-
-    if client.is_locked and interaction.user.id != client.MY_USER_ID:
-        await interaction.response.send_message("❌ This app is currently locked!", ephemeral=True)
-        return
-
-    ping = round(client.latency * 1000)
-    server_count = len(client.guilds)
-    buffered_logs = len(LOG_BUFFER)
-    
-    process = psutil.Process(os.getpid())
-    ram_usage = round(process.memory_info().rss / (1024 * 1024), 2)
-
-    perf_card = (
-        f"⚙️ **System Diagnostics Dashboard**\n"
-        f"```yaml\n"
-        f"Latency/Ping:  {ping}ms\n"
-        f"Active Guilds: {server_count}\n"
-        f"Log Queue:     {buffered_logs}/20 entries\n"
-        f"RAM Allocation: {ram_usage} MB\n"
-        f"```"
-    )
-    
-    await interaction.response.send_message(perf_card, ephemeral=False)
-@client.tree.command(name="avatar", description="View the profile picture of a server member")
-@app_commands.describe(user="The member whose avatar you want to see (Leave blank for yours)")
-async def avatar(interaction: discord.Interaction, user: discord.User = None):
-    target_user = user or interaction.user
-    logger.info(f"User {interaction.user} checked the avatar of {target_user}")
-    
-    if client.is_locked and interaction.user.id != client.MY_USER_ID:
-        await interaction.response.send_message("❌ This app is currently locked!", ephemeral=True)
-        return
+    if len(payload) > 2000:
+        logger.warning(f"/crash desktop denied: Payload size ({len(payload)}) over 2000+ chars.")
+        await interaction.followup.send("Total chars exceed 2000+. Reduce the amount or i call airstrike.", ephemeral=False)
+    else:
+        await interaction.followup.send(f"Executing PC protocol {amount} times...", ephemeral=False)
         
-    avatar_url = target_user.display_avatar.url
-    
-    # 1. Create the Embed structure
-    embed = discord.Embed(
-        title=f"🖼️ Avatar for {target_user.name}", 
-        color=discord.Color.blue()
-    )
-    embed.set_image(url=avatar_url)
-    
-    await interaction.response.send_message(embed=embed, ephemeral=False)
+    logger.info(f"Successfully processed /crash PC payload for {interaction.user}")
 
-@client.tree.command(name="ghostping", description="Ping a user multiple times and vanish the messages instantly")
-@app_commands.describe(user="The user you want to ghost ping", amount="How many times to ping (Max 10)")
-async def ghostping(interaction: discord.Interaction, user: discord.User, amount: int):
-    logger.info(f"User {interaction.user} ghost-pinged {user} | Amount: {amount}")
+    try:
+        await interaction.delete_original_response()
+    except discord.HTTPException as e:
+        logger.error(f"Failed to delete initial processing message: {e}")
 
-    if client.is_locked and interaction.user.id != client.MY_USER_ID:
-        await interaction.response.send_message("❌ This app is currently locked!", ephemeral=True)
-        return
-
-    # Keep a tight limit so the bot doesn't get rate-limited or banned by Discord
-    if amount <= 0 or amount > 10:
-        await interaction.response.send_message("❌ Keep the pings between 1 and 10, bro!", ephemeral=True)
-        return
-
-    # Quiet confirmation to the user executing it
-    await interaction.response.send_message(f"👻 Sending {amount} ghost pings to {user.mention}...", ephemeral=True)
-    
-    ping_channel = interaction.channel
-    
-    for _ in range(amount):
-        # Fire and delete instantly
-        try:
-            ghost_msg = await ping_channel.send(user.mention)
-            await ghost_msg.delete()
-            # Micro-sleep to keep the order clean and prevent API hitting walls
-            await asyncio.sleep(0.3)
-        except discord.HTTPException as e:
-            logger.error(f"Ghost ping cycle interrupted: {e}")
-            break
-
-# --- START THE BOT --- #
+# --- START BOT --- #
+# Make sure your token is securely placed in your environment variables on Railway
 if __name__ == "__main__":
     TOKEN = os.getenv("DISCORD_TOKEN")
     if TOKEN:
         client.run(TOKEN)
     else:
-        print("❌ Error: 'DISCORD_TOKEN' environment variable not found.")
+        logger.critical("No DISCORD_TOKEN found in environment variables!")
