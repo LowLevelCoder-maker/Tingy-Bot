@@ -220,7 +220,7 @@ async def crash(interaction: discord.Interaction, platform: str, amount: int):
           pc_image_url = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZXo3ZDdzNHpmejVzaXdhbnRkeDJmZ2d4eHZhOXZveTFkMnBkZ3d6ciZlcD12MV9naWZzX3NlYXJjaCZjdD1n/47JkhVe6O3gGsJSbTR/giphy.webp"
           payload = f"{pc_image_url}\n" * amount
           if len(payload) > 2000:
-          logger.warning(f"/crash desktop denied: Payload size ({len(payload)}) over 2000+ chars.")
+              logger.warning(f"/crash desktop denied: Payload size ({len(payload)}) over 2000+ chars.")
           await interacton.followup.send("Total chars exceed 2000+. Reduce the amount or i call airstrike.", ephemeral=False)
         else:
         await interaction.followup.send(f" Executing PC protocol {amount} times...", ephemeral=False)
