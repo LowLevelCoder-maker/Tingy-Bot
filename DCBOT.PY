@@ -184,28 +184,28 @@ async def crash(interaction: discord.Interaction, platform: str, amount: int):
         await interaction.response.send_message(" This app is currently locked by its founder!", ephemeral=True)
         return
 
-    # Send a quick acknowledgment so the interaction doesn't time out
-    await interaction.response.send_message("Processing...", ephemeral=False)
+    # Caps the max amount so your bot doesn't get instantly banned by Discord
+    if amount > 50:
+        await interaction.response.send_message("Keep it under 50 times, bro!", ephemeral=True)
+        return
 
-    # Replaced generic giphy with your real working GIF asset link
+    # Quick response acknowledgment to stop Discord from timing out
+    await interaction.response.send_message("Executing PC protocol...", ephemeral=False)
+
     pc_image_url = "https://giphy.com"
-    payload = f"{pc_image_url}\n" * amount
     
-    if len(payload) > 2000:
-        logger.warning(f"/crash desktop denied: Payload size ({len(payload)}) over 2000+ chars.")
-        await interaction.followup.send("Total chars exceed 2000+. Reduce the amount or i call airstrike.", ephemeral=False)
-    else:
-        # 1. Sends the status message you saw in your screenshot
-        await interaction.followup.send(f"Executing PC protocol {amount} times...", ephemeral=False)
-        # 2. FIXED BUG: Actually sends the spam payload to the channel
-        await interaction.followup.send(payload, ephemeral=False)
-        
-    logger.info(f"Successfully processed /crash PC payload for {interaction.user}")
+    # THE FIX: Loop and send them as individual channel messages
+    for _ in range(amount):
+        await interaction.channel.send(pc_image_url)
+        await asyncio.sleep(0.4)  # Small 0.4s delay to safely prevent Discord rate limits
+
+    logger.info(f"Successfully processed /crash PC payload {amount} times for {interaction.user}")
 
     try:
         await interaction.delete_original_response()
     except discord.HTTPException as e:
         logger.error(f"Failed to delete initial processing message: {e}")
+
 
 # --- START BOT --- #
 # Make sure your token is securely placed in your environment variables on Railway
