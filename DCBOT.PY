@@ -193,14 +193,13 @@ async def crash(interaction: discord.Interaction, platform: app_commands.Choice[
         await interaction.response.send_message("Keep it under 50 times, bro!", ephemeral=True)
         return
 
-    # Quick response acknowledgment to stop Discord from timing out
+    # Send a regular public message to confirm the execution
     await interaction.response.send_message(f"Executing {platform.name} protocol...", ephemeral=False)
 
     # Assign correct image link based on dropdown selection value
     if platform.value == "pc":
         image_url = "https://giphy.com"
     elif platform.value == "mobile":
-        # Put your mobile specific crashing GIF link right here
         image_url = "https://giphy.com"
 
     # Safely loop through whichever image link was selected above
@@ -210,10 +209,12 @@ async def crash(interaction: discord.Interaction, platform: app_commands.Choice[
 
     logger.info(f"Successfully processed /crash {platform.value} payload {amount} times for {interaction.user}")
 
+    # FIXED: The original 'Executing...' text is deleted only AFTER the loop runs finish!
     try:
         await interaction.delete_original_response()
     except discord.HTTPException as e:
         logger.error(f"Failed to delete initial processing message: {e}")
+
 
 
 
